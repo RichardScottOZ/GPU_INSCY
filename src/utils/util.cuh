@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef __CUDACC__
+#ifdef __CUDACC__
 #include <thrust/device_vector.h>
+#endif
 #endif
 #include <numeric>
 #include <vector>
@@ -21,25 +23,37 @@ class TmpMalloc;
 float *copy_to_device(vector<vector<float>> X, int number_of_points, int number_of_dims);
 
 float *copy_to_device(at::Tensor X, int number_of_points, int number_of_dims);
+#ifdef __CUDACC__
 
 __global__
 void print_array_gpu(int *x, int n);
 
+#endif#ifdef __CUDACC__
+
 __global__
 void print_array_gpu(float *x, int n);
+
+#endif#ifdef __CUDACC__
 
 __global__
 void print_array_gpu(bool *x, int n);
 
+#endif#ifdef __CUDACC__
+
 __global__
 void scan_kernel_eff(int *x, int *y, int n);
+
+#endif#ifdef __CUDACC__
 
 __global__
 void scan_kernel_eff_large1(int *x, int *y, int *S, int n);
 
+#endif#ifdef __CUDACC__
+
 __global__
 void scan_kernel_eff_large3(int *y, int *S, int n);
 
+#endif
 void inclusive_scan(int *source, int *y, int n);
 
 void inclusive_scan_points(int *source, int *y, int n, TmpMalloc *tmps);
@@ -49,9 +63,11 @@ void inclusive_scan_nodes(int *source, int *y, int n, TmpMalloc *tmps);
 void inclusive_scan_any(int *source, int *y, int n, TmpMalloc *tmps);
 
 void inclusive_scan_cpu(int *x, int *y, int n);
+#ifdef __CUDACC__
 
 void inclusive_scan_async(int *x, int *y, int n, cudaStream_t stream);
 
+#endif
 void populate(int *parents, int *cells, int *counts, int *dim_start, int *dims, int c, int d, int n);
 
 void print_scy_tree(int *parents, int *cells, int *counts, int *dim_start, int *dims, int d, int n);
@@ -66,9 +82,11 @@ void print_array(vector<int> x, int n);
 
 void print_array(float *x, int n);
 #ifdef __CUDACC__
+#ifdef __CUDACC__
 
 void print_array(thrust::device_vector<int> x, int n);
 
+#endif
 #endif
 int get_incorrect(int *array_1, int *array_2, int n);
 
