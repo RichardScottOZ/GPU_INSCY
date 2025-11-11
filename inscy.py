@@ -18,7 +18,12 @@ inscy = load(name="GPU_INSCY_1",
                       "src/algorithms/GPU_Clustering.cu",
                       "src/algorithms/INSCY.cpp",
                       "src/algorithms/GPU_INSCY.cu"
-                      ])
+                      ],
+    extra_cflags=["/bigobj"],                         # <-- add
+    extra_cuda_cflags=["-std=c++17","-Xcompiler","/bigobj"],  # <-- add
+    verbose=True,
+)
+
 print("Finished compilation, took: %.4fs" % (time.time() - t0))
 
 
