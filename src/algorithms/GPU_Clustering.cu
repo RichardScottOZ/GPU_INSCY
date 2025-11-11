@@ -58,60 +58,41 @@ float phi_gpu(int p_id, int *d_neighborhood, float neighborhood_size, int number
     return sum;
 }
 
-// OLD (delete or comment out)
-/*
-__device__
-float gamma_gpu(int n) {
-  if (n == 2) return 1.;
-  else if (n == 1) return sqrt(PI);
-  return (n / 2. - 1.) * gamma_gpu(n - 2);
-}
-__device__
-float c_gpu(int subspace_size) { ... }
-__device__
-float alpha_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
-__device__
-float expDen_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
-*/
+#include <math.h>
+#ifndef M_PI_F
+#define M_PI_F 3.141592654f
+#endif
 
-/// NEW
+__device__ __forceinline__ float gamma_int_plus2(int subspace_size) {
+    int m = subspace_size + 1;
+    float g = 1.0f;
+    #pragma unroll
+    for (int i = 2; i <= m; ++i) g *= (float)i;
+    return g;
+}
+
 __device__ __forceinline__ float c_gpu(int subspace_size) {
     float r = powf(M_PI_F, 0.5f * subspace_size);
-    r = r / tgammaf((float)subspace_size + 2.0f);
+    r = r / gamma_int_plus2(subspace_size);
     return r;
 }
-__device__ __forceinline__ float alpha_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+
+__device__ __forceinline__ float alpha_gpu(int subspace_size,
+                                           float neighborhood_size,
+                                           int n, float v) {
     float r = 2.0f * n * powf(neighborhood_size, (float)subspace_size) * c_gpu(subspace_size);
     r = r / (powf(v, (float)subspace_size) * (subspace_size + 2.0f));
     return r;
 }
-__device__ __forceinline__ float expDen_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+
+__device__ __forceinline__ float expDen_gpu(int subspace_size,
+                                            float neighborhood_size,
+                                            int n, float v) {
     float r = n * c_gpu(subspace_size) * powf(neighborhood_size, (float)subspace_size);
     r = r / powf(v, (float)subspace_size);
     return r;
 }
 
-
-
-
-__device__
-float alpha_gpu(int subspace_size, float neighborhood_size, int n, float v) {
-    float r = 2 * n * pow(neighborhood_size, subspace_size) * c_gpu(subspace_size);
-    r = r / (pow(v, subspace_size) * (subspace_size + 2));
-    return r;
-}
-
-__device__
-float expDen_gpu(int subspace_size, float neighborhood_size, int n, float v) {
-    float r = n * c_gpu(subspace_size) * pow(neighborhood_size, subspace_size);
-    r = r / pow(v, subspace_size);
-    return r;
-}
-
-__device__
-float omega_gpu(int subspace_size) {
-    return 2.0 / (subspace_size + 2.0);
-}
 
 __global__
 void
