@@ -865,7 +865,8 @@ GPU_SCY_tree::restrict_merge(TmpMalloc *tmps, int first_dim_no, int number_of_di
     for (int i = 0; i < number_of_dims; i++) {
         for (int cell_no = 0; cell_no < number_of_cells; cell_no++) {
             int node_offset = i * number_of_cells * number_of_nodes + cell_no * number_of_nodes;
-            memset << < 1, 1 >> > (d_is_included + node_offset, 0, 1);
+            //old memset << < 1, 1 >> > (d_is_included + node_offset, 0, 1);
+            set_int_at<<<1, 1>>>(d_is_included + node_offset, 0, 1);
         }
     }
     gpuErrchk(cudaPeekAtLastError());
