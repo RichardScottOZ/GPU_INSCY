@@ -3,11 +3,16 @@
 #include "../utils/TmpMalloc.cuh"
 #include "../structures/GPU_SCY_tree.cuh"
 
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 
 #include <vector>
+
+#include <math.h>
+#ifndef M_PI_F
+#define M_PI_F 3.141592654f
+#endif
+
 #define BLOCK_SIZE 512
 
 #define PI 3.14
@@ -34,7 +39,8 @@ float dist_gpu(int p_id, int q_id, float *X, int *subspace, int subspace_size, i
         float diff = p[d_i] - q[d_i];
         distance += diff * diff;
     }
-    return sqrt(distance);
+    // old return sqrt(distance);
+    return sqrtf(distance);
 }
 
 __device__
@@ -52,22 +58,41 @@ float phi_gpu(int p_id, int *d_neighborhood, float neighborhood_size, int number
     return sum;
 }
 
+// OLD (delete or comment out)
+/*
 __device__
 float gamma_gpu(int n) {
-    if (n == 2) {
-        return 1.;
-    } else if (n == 1) {
-        return sqrt(PI);
-    }
-    return (n / 2. - 1.) * gamma_gpu(n - 2);
+  if (n == 2) return 1.;
+  else if (n == 1) return sqrt(PI);
+  return (n / 2. - 1.) * gamma_gpu(n - 2);
 }
-
 __device__
-float c_gpu(int subspace_size) {
-    float r = pow(PI, subspace_size / 2.);
-    r = r / gamma_gpu(subspace_size + 2);
+float c_gpu(int subspace_size) { ... }
+__device__
+float alpha_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
+__device__
+float expDen_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
+*/
+
+/// NEW
+__device__ __forceinline__ float c_gpu(int subspace_size) {
+    float r = powf(M_PI_F, 0.5f * subspace_size);
+    r = r / tgammaf((float)subspace_size + 2.0f);
     return r;
 }
+__device__ __forceinline__ float alpha_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+    float r = 2.0f * n * powf(neighborhood_size, (float)subspace_size) * c_gpu(subspace_size);
+    r = r / (powf(v, (float)subspace_size) * (subspace_size + 2.0f));
+    return r;
+}
+__device__ __forceinline__ float expDen_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+    float r = n * c_gpu(subspace_size) * powf(neighborhood_size, (float)subspace_size);
+    r = r / powf(v, (float)subspace_size);
+    return r;
+}
+
+
+
 
 __device__
 float alpha_gpu(int subspace_size, float neighborhood_size, int n, float v) {
@@ -236,17 +261,21 @@ pair<int **, int **> find_neighborhoods(TmpMalloc *tmps, int *d_neighborhoods, i
 
     if (size == 0)
         return pair<int **, int **>();
-std::vector<int*> h_restricted_dims_list_vec(size);
-int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
-std::vector<int> h_number_of_restricted_dims_vec(size);
-int* h_number_of_restricted_dims = h_number_of_restricted_dims_vec.data();
-std::vector<int*> h_points_list_vec(size);
-int** h_points_list = h_points_list_vec.data();
-std::vector<int> h_number_of_points_vec(size);
-int* h_number_of_points = h_number_of_points_vec.data();
-    int **h_new_neighborhoods_list = new int *[size];
-std::vector<int*> h_new_neighborhood_sizes_list_vec(size);
-int** h_new_neighborhood_sizes_list = h_new_neighborhood_sizes_list_vec.data();
+
+    // move in
+    std::vector<int*> h_restricted_dims_list_vec(size);
+    int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
+    std::vector<int> h_number_of_restricted_dims_vec(size);
+    int* h_number_of_restricted_dims = h_number_of_restricted_dims_vec.data();
+    std::vector<int*> h_points_list_vec(size);
+    int** h_points_list = h_points_list_vec.data();
+    std::vector<int> h_number_of_points_vec(size);
+    int* h_number_of_points = h_number_of_points_vec.data();
+        int **h_new_neighborhoods_list = new int *[size];
+    std::vector<int*> h_new_neighborhood_sizes_list_vec(size);
+    int** h_new_neighborhood_sizes_list = h_new_neighborhood_sizes_list_vec.data();
+    //move in
+
     int **h_new_neighborhood_end_list = new int *[size];
 
     int j = 0;
@@ -425,17 +454,20 @@ find_neighborhoods_star(TmpMalloc *tmps, int *d_neighborhoods, int *d_neighborho
 
     if (size == 0)
         return pair<int **, int **>();
-std::vector<int*> h_restricted_dims_list_vec(size);
-int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
-std::vector<int> h_number_of_restricted_dims_vec(size);
-int* h_number_of_restricted_dims = h_number_of_restricted_dims_vec.data();
-std::vector<int*> h_points_list_vec(size);
-int** h_points_list = h_points_list_vec.data();
-std::vector<int> h_number_of_points_vec(size);
-int* h_number_of_points = h_number_of_points_vec.data();
-    int **h_new_neighborhoods_list = new int *[size];
-std::vector<int*> h_new_neighborhood_sizes_list_vec(size);
-int** h_new_neighborhood_sizes_list = h_new_neighborhood_sizes_list_vec.data();
+// move in
+    std::vector<int*> h_restricted_dims_list_vec(size);
+    int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
+    std::vector<int> h_number_of_restricted_dims_vec(size);
+    int* h_number_of_restricted_dims = h_number_of_restricted_dims_vec.data();
+    std::vector<int*> h_points_list_vec(size);
+    int** h_points_list = h_points_list_vec.data();
+    std::vector<int> h_number_of_points_vec(size);
+    int* h_number_of_points = h_number_of_points_vec.data();
+        int **h_new_neighborhoods_list = new int *[size];
+    std::vector<int*> h_new_neighborhood_sizes_list_vec(size);
+    int** h_new_neighborhood_sizes_list = h_new_neighborhood_sizes_list_vec.data();     
+// move in
+
     int **h_new_neighborhood_end_list = new int *[size];
 
     int j = 0;
@@ -692,14 +724,18 @@ void GPU_Clustering(vector<int *> new_neighborhoods_list, vector<int *> new_neig
     cudaMemcpy(d_neighborhood_end_list, new_neighborhood_end_list.data(), size * sizeof(int *), cudaMemcpyHostToDevice);
 
     gpuErrchk(cudaPeekAtLastError());
-std::vector<int*> h_points_list_vec(size);
-int** h_points_list = h_points_list_vec.data();
-std::vector<int*> h_restricted_dims_list_vec(size);
-int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
-std::vector<int> h_number_of_points_vec(size);
-int* h_number_of_points = h_number_of_points_vec.data();
-std::vector<float> h_v_vec(size);
-float* h_v = h_v_vec.data();
+// move in
+    std::vector<int*> h_points_list_vec(size);
+    int** h_points_list = h_points_list_vec.data();
+    std::vector<int*> h_restricted_dims_list_vec(size);
+    int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
+    std::vector<int> h_number_of_points_vec(size);
+    int* h_number_of_points = h_number_of_points_vec.data();
+    std::vector<float> h_v_vec(size);
+    float* h_v = h_v_vec.data();
+
+// move in
+
     int number_of_points = 0;
     for (int i = 0; i < size; i++) {
         GPU_SCY_tree *restricted_scy_tree = restricted_scy_tree_list[i];
