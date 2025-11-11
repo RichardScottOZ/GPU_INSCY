@@ -13,16 +13,19 @@ inscy = load(name="GPU_INSCY_1",
                       "src/utils/util.cu",
                       "src/utils/TmpMalloc.cu",
                       "src/structures/SCY_tree.cpp",
-                      "src/structures/GPU_SCY_tree.cu",
+                      #"src/structures/GPU_SCY_tree.cu",
+                      "src/structures/GPU_SCY_tree.cpp",
                       "src/algorithms/Clustering.cpp",
                       "src/algorithms/GPU_Clustering.cu",
                       "src/algorithms/INSCY.cpp",
-                      "src/algorithms/GPU_INSCY.cu"
+                      "src/algorithms/GPU_INSCY.cu",
+                      "src/structures/GPU_SCY_tree_kernels.cu"
                       ],
     extra_cflags=["/bigobj"],                         # <-- add
-    extra_cuda_cflags=["-std=c++17","-Xcompiler","/bigobj"],  # <-- add
+    extra_cuda_cflags=["-std=c++17", "-O0", "-Xcompiler", "/bigobj", "-DSCY_STAGE=1","-Xptxas", "-maxrregcount=64"],   # start with only the first kernel compiled],
     verbose=True,
 )
+
 
 print("Finished compilation, took: %.4fs" % (time.time() - t0))
 
