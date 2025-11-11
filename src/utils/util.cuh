@@ -91,8 +91,8 @@ void zero(int *array, int n);
 bool subspace_of(vector<int> subspace, vector<int> subspace_mark);
 
 
-struct vec_cmp : public std::binary_function<vector<int>, vector<int>, bool> {
-bool operator()(const vector<int> &a, const vector<int> &b) const;
+struct vec_cmp {
+  bool operator()(const std::vector<int>& a, const std::vector<int>& b) const;
 };
 
 
