@@ -7,6 +7,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+#include <vector>
 #define BLOCK_SIZE 512
 
 #define PI 3.14
@@ -235,14 +236,17 @@ pair<int **, int **> find_neighborhoods(TmpMalloc *tmps, int *d_neighborhoods, i
 
     if (size == 0)
         return pair<int **, int **>();
-
-    int *h_restricted_dims_list[size];
-    int h_number_of_restricted_dims[size];
-    int *h_points_list[size];
-    int h_number_of_points[size];
-
+std::vector<int*> h_restricted_dims_list_vec(size);
+int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
+std::vector<int> h_number_of_restricted_dims_vec(size);
+int* h_number_of_restricted_dims = h_number_of_restricted_dims_vec.data();
+std::vector<int*> h_points_list_vec(size);
+int** h_points_list = h_points_list_vec.data();
+std::vector<int> h_number_of_points_vec(size);
+int* h_number_of_points = h_number_of_points_vec.data();
     int **h_new_neighborhoods_list = new int *[size];
-    int *h_new_neighborhood_sizes_list[size];
+std::vector<int*> h_new_neighborhood_sizes_list_vec(size);
+int** h_new_neighborhood_sizes_list = h_new_neighborhood_sizes_list_vec.data();
     int **h_new_neighborhood_end_list = new int *[size];
 
     int j = 0;
@@ -421,14 +425,17 @@ find_neighborhoods_star(TmpMalloc *tmps, int *d_neighborhoods, int *d_neighborho
 
     if (size == 0)
         return pair<int **, int **>();
-
-    int *h_restricted_dims_list[size];
-    int h_number_of_restricted_dims[size];
-    int *h_points_list[size];
-    int h_number_of_points[size];
-
+std::vector<int*> h_restricted_dims_list_vec(size);
+int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
+std::vector<int> h_number_of_restricted_dims_vec(size);
+int* h_number_of_restricted_dims = h_number_of_restricted_dims_vec.data();
+std::vector<int*> h_points_list_vec(size);
+int** h_points_list = h_points_list_vec.data();
+std::vector<int> h_number_of_points_vec(size);
+int* h_number_of_points = h_number_of_points_vec.data();
     int **h_new_neighborhoods_list = new int *[size];
-    int *h_new_neighborhood_sizes_list[size];
+std::vector<int*> h_new_neighborhood_sizes_list_vec(size);
+int** h_new_neighborhood_sizes_list = h_new_neighborhood_sizes_list_vec.data();
     int **h_new_neighborhood_end_list = new int *[size];
 
     int j = 0;
@@ -685,11 +692,14 @@ void GPU_Clustering(vector<int *> new_neighborhoods_list, vector<int *> new_neig
     cudaMemcpy(d_neighborhood_end_list, new_neighborhood_end_list.data(), size * sizeof(int *), cudaMemcpyHostToDevice);
 
     gpuErrchk(cudaPeekAtLastError());
-    int *h_points_list[size];
-    int *h_restricted_dims_list[size];
-    int h_number_of_points[size];
-    float h_v[size];
-
+std::vector<int*> h_points_list_vec(size);
+int** h_points_list = h_points_list_vec.data();
+std::vector<int*> h_restricted_dims_list_vec(size);
+int** h_restricted_dims_list = h_restricted_dims_list_vec.data();
+std::vector<int> h_number_of_points_vec(size);
+int* h_number_of_points = h_number_of_points_vec.data();
+std::vector<float> h_v_vec(size);
+float* h_v = h_v_vec.data();
     int number_of_points = 0;
     for (int i = 0; i < size; i++) {
         GPU_SCY_tree *restricted_scy_tree = restricted_scy_tree_list[i];
