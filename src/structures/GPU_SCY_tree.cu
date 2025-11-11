@@ -52,7 +52,7 @@ float dist_prune_gpu(int p_id, int q_id, float *X, int d, int *subspace, int sub
         float diff = p[d_i] - q[d_i];
         distance += diff * diff;
     }
-    return sqrt(distance);
+    return sqrtf(distance);
 }
 
 // OLD (delete or comment out)
@@ -62,42 +62,57 @@ float dist_prune_gpu(int p_id, int q_id, float *X, int d, int *subspace, int sub
 #define M_PI_F 3.141592654f
 #endif
 
-// Compute (subspace_size + 1)! as float: Γ(subspace_size + 2)
-__device__ __forceinline__ float gamma_int_plus2(int subspace_size) {
-    int m = subspace_size + 1; // factorial argument
+// ===== BEGIN: prune helpers without libdevice special functions =====
+// Uses only simple float math; avoids powf/tgammaf in device code.
+
+#include <cuda_runtime.h>
+#include <math_constants.h>  // CUDART_PI_F
+
+// Γ(k + 2) == (k + 1)! as float
+__device__ __forceinline__ float gamma_int_plus2(int k) {
+    int m = k + 1;
     float g = 1.0f;
     #pragma unroll
     for (int i = 2; i <= m; ++i) g *= (float)i;
     return g;
 }
 
-__device__ __forceinline__ float c_prune_gpu(int subspace_size) {
-    // c = π^{k/2} / Γ(k+2), where k=subspace_size
-    float r = powf(M_PI_F, 0.5f * subspace_size);
-    r = r / gamma_int_plus2(subspace_size);
+// π^{k/2} without powf: π^m * sqrt(π) if k is odd
+__device__ __forceinline__ float pi_pow_k_over_2(int k) {
+    float r = 1.0f;
+    int m = k >> 1;  // floor(k/2)
+    #pragma unroll
+    for (int i = 0; i < m; ++i) r *= CUDART_PI_F;
+    if (k & 1) r *= sqrtf(CUDART_PI_F);
     return r;
 }
 
-__device__ __forceinline__ float alpha_prune_gpu(int subspace_size,
-                                                 float neighborhood_size,
-                                                 int n, float v) {
-    float r = 2.0f * n * powf(neighborhood_size, (float)subspace_size) * c_prune_gpu(subspace_size);
-    r = r / (powf(v, (float)subspace_size) * (subspace_size + 2.0f));
-    return r;
+// c(k) = π^{k/2} / Γ(k+2)
+__device__ __forceinline__ float c_prune_gpu(int k) {
+    return pi_pow_k_over_2(k) / gamma_int_plus2(k);
 }
 
-__device__ __forceinline__ float expDen_prune_gpu(int subspace_size,
-                                                  float neighborhood_size,
-                                                  int n, float v) {
-    float r = n * c_prune_gpu(subspace_size) * powf(neighborhood_size, (float)subspace_size);
-    r = r / powf(v, (float)subspace_size);
-    return r;
+// alpha(k) = 2 n eps^k c(k) / [ v^k (k + 2) ]
+__device__ __forceinline__ float alpha_prune_gpu(int k, float eps, int n, float v) {
+    float epsk = 1.0f, vk = 1.0f;
+    #pragma unroll
+    for (int i = 0; i < k; ++i) { epsk *= eps; vk *= v; }
+    float r = 2.0f * n * epsk * c_prune_gpu(k);
+    return r / (vk * (k + 2.0f));
 }
 
-__device__ __forceinline__ float omega_prune_gpu(int subspace_size) {
-    return 2.0f / (subspace_size + 2.0f);
+// expDen(k) = n c(k) eps^k / v^k
+__device__ __forceinline__ float expDen_prune_gpu(int k, float eps, int n, float v) {
+    float epsk = 1.0f, vk = 1.0f;
+    #pragma unroll
+    for (int i = 0; i < k; ++i) { epsk *= eps; vk *= v; }
+    return (n * c_prune_gpu(k) * epsk) / vk;
 }
 
+__device__ __forceinline__ float omega_prune_gpu(int k) {
+    return 2.0f / (k + 2.0f);
+}
+// ===== END: prune helpers without libdevice special functions =====
 
 
 __global__
@@ -493,7 +508,7 @@ void compute_is_weak_dense_prune(int *d_is_dense, int *d_neighborhoods, int *d_n
         }
         float a = alpha_prune_gpu(d, neighborhood_size, n, v);
         float w = omega_prune_gpu(d);
-        d_is_dense[i] = p >= max(F * a, num_obj * w) ? 1 : 0;
+        d_is_dense[i] = p >= fmaxf(F * a, num_obj * w) ? 1 : 0;
     }
 }
 
@@ -511,7 +526,7 @@ void compute_is_weak_dense_rectangular_prune(int *d_is_dense, int *d_neighborhoo
         int offset = p_id > 0 ? d_neighborhood_end[p_id - 1] : 0;
         int neighbor_count = d_neighborhood_end[p_id] - offset;
         float a = expDen_prune_gpu(d, neighborhood_size, n, v);
-        d_is_dense[i] = neighbor_count >= max(F * a, (float) num_obj);
+        d_is_dense[i] = neighbor_count >= fmaxf(F * a, (float) num_obj);
     }
 }
 
