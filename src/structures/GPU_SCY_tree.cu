@@ -2,6 +2,11 @@
 #include "../utils/TmpMalloc.cuh"
 #include "../utils/util.cuh"
 
+#include <math.h>
+#ifndef M_PI_F
+#define M_PI_F 3.141592654f
+#endif
+
 #define BLOCK_WIDTH 64
 #define BLOCK_SIZE 512
 
@@ -50,29 +55,44 @@ float dist_prune_gpu(int p_id, int q_id, float *X, int d, int *subspace, int sub
     return sqrt(distance);
 }
 
+// OLD (delete or comment out)
+/*
 __device__
 float gamma_prune_gpu(int n) {
-    if (n == 2) {
-        return 1.;
-    } else if (n == 1) {
-        return sqrt(PI);
-    }
-    return (n / 2. - 1.) * gamma_prune_gpu(n - 2);
+  if (n == 2) { return 1.; }
+  else if (n == 1) { return sqrt(PI); }
+  return (n / 2. - 1.) * gamma_prune_gpu(n - 2);
 }
-
 __device__
 float c_prune_gpu(int subspace_size) {
-    float r = pow(PI, subspace_size / 2.);
-    r = r / gamma_prune_gpu(subspace_size + 2);
+  float r = pow(PI, subspace_size / 2.);
+  r = r / gamma_prune_gpu(subspace_size + 2);
+  return r;
+}
+__device__
+float alpha_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
+__device__
+float expDen_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
+*/
+
+/// NEW
+__device__ __forceinline__ float c_prune_gpu(int subspace_size) {
+    float r = powf(M_PI_F, 0.5f * subspace_size);
+    r = r / tgammaf((float)subspace_size + 2.0f);
+    return r;
+}
+__device__ __forceinline__ float alpha_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+    float r = 2.0f * n * powf(neighborhood_size, (float)subspace_size) * c_prune_gpu(subspace_size);
+    r = r / (powf(v, (float)subspace_size) * (subspace_size + 2.0f));
+    return r;
+}
+__device__ __forceinline__ float expDen_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+    float r = n * c_prune_gpu(subspace_size) * powf(neighborhood_size, (float)subspace_size);
+    r = r / powf(v, (float)subspace_size);
     return r;
 }
 
-__device__
-float alpha_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
-    float r = 2 * n * pow(neighborhood_size, subspace_size) * c_prune_gpu(subspace_size);
-    r = r / (pow(v, subspace_size) * (subspace_size + 2));
-    return r;
-}
+
 
 __device__
 float expDen_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
