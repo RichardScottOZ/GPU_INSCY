@@ -17,7 +17,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 }
 
 __global__
-void memset(int *a, int i, int val) {
+void set_int_at(int *a, int i, int val) {
     a[i] = val;
 }
 
