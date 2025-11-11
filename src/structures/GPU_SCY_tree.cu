@@ -56,25 +56,6 @@ float dist_prune_gpu(int p_id, int q_id, float *X, int d, int *subspace, int sub
 }
 
 // OLD (delete or comment out)
-/*
-__device__
-float gamma_prune_gpu(int n) {
-  if (n == 2) { return 1.; }
-  else if (n == 1) { return sqrt(PI); }
-  return (n / 2. - 1.) * gamma_prune_gpu(n - 2);
-}
-__device__
-float c_prune_gpu(int subspace_size) {
-  float r = pow(PI, subspace_size / 2.);
-  r = r / gamma_prune_gpu(subspace_size + 2);
-  return r;
-}
-__device__
-float alpha_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
-__device__
-float expDen_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) { ... }
-*/
-
 /// NEW
 __device__ __forceinline__ float c_prune_gpu(int subspace_size) {
     float r = powf(M_PI_F, 0.5f * subspace_size);
@@ -92,18 +73,9 @@ __device__ __forceinline__ float expDen_prune_gpu(int subspace_size, float neigh
     return r;
 }
 
-
-
-__device__
-float expDen_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
-    float r = n * c_prune_gpu(subspace_size) * pow(neighborhood_size, subspace_size);
-    r = r / pow(v, subspace_size);
-    return r;
-}
-
 __device__
 float omega_prune_gpu(int subspace_size) {
-    return 2.0 / (subspace_size + 2.0);
+    return 2.0f / (subspace_size + 2.0f);
 }
 
 
