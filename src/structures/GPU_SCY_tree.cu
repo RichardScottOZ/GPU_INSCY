@@ -57,26 +57,47 @@ float dist_prune_gpu(int p_id, int q_id, float *X, int d, int *subspace, int sub
 
 // OLD (delete or comment out)
 /// NEW
+#include <math.h>
+#ifndef M_PI_F
+#define M_PI_F 3.141592654f
+#endif
+
+// Compute (subspace_size + 1)! as float: Γ(subspace_size + 2)
+__device__ __forceinline__ float gamma_int_plus2(int subspace_size) {
+    int m = subspace_size + 1; // factorial argument
+    float g = 1.0f;
+    #pragma unroll
+    for (int i = 2; i <= m; ++i) g *= (float)i;
+    return g;
+}
+
 __device__ __forceinline__ float c_prune_gpu(int subspace_size) {
+    // c = π^{k/2} / Γ(k+2), where k=subspace_size
     float r = powf(M_PI_F, 0.5f * subspace_size);
-    r = r / tgammaf((float)subspace_size + 2.0f);
+    r = r / gamma_int_plus2(subspace_size);
     return r;
 }
-__device__ __forceinline__ float alpha_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+
+__device__ __forceinline__ float alpha_prune_gpu(int subspace_size,
+                                                 float neighborhood_size,
+                                                 int n, float v) {
     float r = 2.0f * n * powf(neighborhood_size, (float)subspace_size) * c_prune_gpu(subspace_size);
     r = r / (powf(v, (float)subspace_size) * (subspace_size + 2.0f));
     return r;
 }
-__device__ __forceinline__ float expDen_prune_gpu(int subspace_size, float neighborhood_size, int n, float v) {
+
+__device__ __forceinline__ float expDen_prune_gpu(int subspace_size,
+                                                  float neighborhood_size,
+                                                  int n, float v) {
     float r = n * c_prune_gpu(subspace_size) * powf(neighborhood_size, (float)subspace_size);
     r = r / powf(v, (float)subspace_size);
     return r;
 }
 
-__device__
-float omega_prune_gpu(int subspace_size) {
+__device__ __forceinline__ float omega_prune_gpu(int subspace_size) {
     return 2.0f / (subspace_size + 2.0f);
 }
+
 
 
 __global__
