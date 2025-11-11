@@ -9,6 +9,7 @@
 #include "../utils/util.cuh"
 
 
+#include <vector>
 int SCY_tree::get_cell_no(float x_ij, int j) {
 
     float cell_size = (this->maxs[j] - this->mins[j]) / this->number_of_cells;
@@ -431,7 +432,7 @@ bool SCY_tree::pruneRecursionAndRemove(int min_size, Neighborhood_tree *neighbor
     int pruned_size = 0;
     for (shared_ptr <Node> &leaf: leafs) {
         vector<int> points;
-        bool is_weak_dense[leaf->points.size()];
+std::vector<bool> is_weak_dense(leaf->points.size());
         int count = 0;
         for (int i = 0; i < leaf->points.size(); i++) {
             int p_id = leaf->points[i];
