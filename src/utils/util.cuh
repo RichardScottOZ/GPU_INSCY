@@ -4,7 +4,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __CUDACC__
 #include <thrust/device_vector.h>
+#endif
 #include <numeric>
 #include <vector>
 
@@ -63,9 +65,11 @@ void print_array(int *x, int n);
 void print_array(vector<int> x, int n);
 
 void print_array(float *x, int n);
+#ifdef __CUDACC__
 
 void print_array(thrust::device_vector<int> x, int n);
 
+#endif
 int get_incorrect(int *array_1, int *array_2, int n);
 
 float v_mean(std::vector<float> v);
