@@ -6,7 +6,19 @@
 
 #include <ATen/ATen.h>
 #include <torch/extension.h>
-#include "nvToolsExt.h"
+#if defined(__has_include)
+#  if __has_include("nvToolsExt.h")
+#    include "nvToolsExt.h"
+#    define NVTX_PUSH_RANGE(name) NVTX_PUSH_RANGE(name)
+#    define NVTX_POP_RANGE()      NVTX_POP_RANGE()
+#  else
+#    define NVTX_PUSH_RANGE(name) do {} while(0)
+#    define NVTX_POP_RANGE()      do {} while(0)
+#  endif
+#else
+#  define NVTX_PUSH_RANGE(name) do {} while(0)
+#  define NVTX_POP_RANGE()      do {} while(0)
+#endif
 #include "TmpMalloc.cuh"
 
 #define SECTION_SIZE 64
@@ -787,9 +799,9 @@ join_gpu(map<vector<int>, int *, vec_cmp> &result, int *d_clustering,
         d_clustering_H = subspace_clustering.second;
 
 
-        nvtxRangePushA("subspace_of");
+        NVTX_PUSH_RANGE("subspace_of");
         bool sub_of = subspace_of(subspace, subspace_H);
-        nvtxRangePop();
+        NVTX_POP_RANGE();
         if (sub_of) {
 
             cudaMemset(d_sizes_H, 0, n * sizeof(int));
